@@ -1,3 +1,8 @@
+// File:        lcs.cpp
+// Author:      Liam Morris
+// Description: Implements the functions contained in lcs.h and contains the
+//              main function for executing the program.
+
 #include "lcs.h"
 
 #include <algorithm>
@@ -7,6 +12,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <sys/resource.h>
 
 using std::cerr;
 using std::cin;
@@ -17,16 +23,95 @@ using std::endl;
 using std::max;
 using std::string;
 
+const char* kDP = "-dp";
+const char* kHirsch = "-hirschberg";
 const char* kNaive = "-naive";
 const char* kMemo = "-memo";
-const char* kDP = "-dp";
 const char* kUsage =
     "Usage: lcs [-naive] [-memo] [-dp] num_tests sequence1 sequence2";
 const int kUp = 1;
 const int kUpLeft = 2;
 const int kLeft = 3;
 
-int lcs_length_dp(const string seq1, const string seq2) {
+string reverse(const string& s) {
+    string reversed;
+
+    for (int i = 0; i < s.length(); ++i) {
+        reversed.push_back(s.at(s.length() - i - 1));
+    }
+
+    return reversed;
+}
+
+int* alg_b(int m, int n, const string& seq1, const string& seq2) {
+    int* k[2];
+    k[0] = new int[n + 1];
+    k[1] = new int[n + 1];
+
+    for (int i = 0; i < n + 1; ++i) {
+        k[1][i] = 0;
+    }
+
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n + 1; ++j) {
+            k[0][j] = k[1][j];
+        }
+
+        for (int j = 0; j < n; ++j) {
+            if (seq1.at(i) == seq2.at(j)) {
+                k[1][j + 1] = k[0][j] + 1;
+            } else {
+                k[1][j + 1] = max(k[1][j], k[0][j + 1]);
+            }
+        }
+    }
+
+    delete[] k[0];
+
+    return k[1];
+}
+
+string alg_c(int m, int n, const string& seq1, const string& seq2) {
+    string c;
+
+    if (n == 0) {
+        c == "";
+    } else if (m == 1) {
+        if (seq2.find(seq1.at(0)) != string::npos) {
+            c = seq1.at(0);
+        } else {
+            c = "";
+        }
+    } else {
+        int i = m / 2;
+
+        int* L1 = alg_b(i, n, seq1.substr(0, i), seq2);
+        int* L2 = alg_b(m - i, n, reverse(seq1.substr(i)), reverse(seq2));
+
+        int k = 0;
+        int max = 0;
+        for (int j = 0; j < n + 1; ++j) {
+            if (max < L1[j] + L2[n - j]) {
+                max = L1[j] + L2[n - j];
+                k = j;
+            }
+        }
+
+        delete[] L1;
+        delete[] L2;
+
+        c =  alg_c(i, k, seq1.substr(0, i), seq2.substr(0, k)) +
+             alg_c(m - i, n - k, seq1.substr(i), seq2.substr(k));
+    }
+
+    return c;
+}
+
+string hirschberg(const string& seq1, const string& seq2) {
+    return alg_c(seq1.length(), seq2.length(), seq1, seq2);
+}
+
+int lcs_length_dp(const string& seq1, const string& seq2) {
     int m = seq1.length();
     int n = seq2.length();
     int result = 0;
@@ -63,10 +148,14 @@ int lcs_length_dp(const string seq1, const string seq2) {
         }
     }
 
+    cout << "LCS: ";
+    print_lcs(seq1, b, seq1.length(), seq2.length());
+    cout << endl;
+
     return c[m][n];
 }
 
-void print_lcs(const string seq1, int** b, int i, int j) {
+void print_lcs(const string& seq1, int** b, int i, int j) {
     if (i == 0 || j == 0) {
         return;
     } else if (b[i][j] == kUpLeft) {
@@ -79,7 +168,7 @@ void print_lcs(const string seq1, int** b, int i, int j) {
     }
 }
 
-int lcs_length_memo(string seq1, string seq2, int i, int j) {
+int lcs_length_memo(const string& seq1, const string& seq2, int i, int j) {
     int m = seq1.length();
     int n = seq2.length();
     int result = 0;
@@ -103,7 +192,7 @@ int lcs_length_memo(string seq1, string seq2, int i, int j) {
 }
 
 int lcs_length_memo_sub(
-    string seq1, string seq2, int i, int j, int** lengths) {
+    const string& seq1, const string& seq2, int i, int j, int** lengths) {
     if (i == seq1.length() || j == seq2.length()) {
         return 0;
     } else if (lengths[i][j] != -1) {
@@ -120,7 +209,7 @@ int lcs_length_memo_sub(
     }
 }
 
-int lcs_length_naive(string seq1, string seq2, int i, int j) {
+int lcs_length_naive(const string& seq1, const string& seq2, int i, int j) {
     if (i == seq1.length() || j == seq2.length()) {
         return 0;
     } else if (seq1.at(i) == seq2.at(j)) {
@@ -135,6 +224,7 @@ int main(int argc, char** argv) {
     bool use_naive = false;
     bool use_memo = false;
     bool use_dp = false;
+    bool use_hirschberg = false;
 
     int num_args = 0;
 
@@ -152,6 +242,9 @@ int main(int argc, char** argv) {
         } else if (strcmp(argv[i], kDP) == 0) {
             use_dp = true;
             ++num_args;
+        } else if (strcmp(argv[i], kHirsch) == 0) {
+            use_hirschberg = true;
+            ++num_args;
         }
     }
 
@@ -162,41 +255,51 @@ int main(int argc, char** argv) {
 
     int num_tests = atoi(argv[argc - 2]);
 
-    ifstream input_file(argv[argc - 1]);
-    string seq1, seq2;
-    getline(input_file, seq1);
-    getline(input_file, seq2);
-    int solution;
-    clock_t start, end;
+    for (int i = 0; i < num_tests; ++i) {
+        ifstream input_file(argv[argc - 1]);
+        string seq1, seq2;
+        getline(input_file, seq1);
+        getline(input_file, seq2);
+        input_file.close();
+        int solution;
+        clock_t start, end;
 
-    // Run naive solution.
-    if (use_naive) {
-        start = clock();
-        solution = lcs_length_naive(seq1, seq2, 0, 0);
-        end = clock();
-        cout << "Naive solution: " << solution << endl
-             << "Running time: " << (end - start) << endl;
-    }
-
-    // Run memoization solution.
-    if (use_memo) {
-        start = clock();
-        for (int i = 0; i < 10000; ++i)
-        solution = lcs_length_memo(seq1, seq2, 0, 0);
-        end = clock();
-        cout << "Memoization solution: " << solution << endl
-             << "Running time: " << (end - start) << endl;
-    }
-
-    // Run dynamic programming solution.
-    if (use_dp) {
-        start = clock();
-        for (int i = 0; i < num_tests; ++i) {
-            solution = lcs_length_dp(seq1, seq2);
+        // Run naive solution.
+        if (use_naive) {
+            start = clock();
+            solution = lcs_length_naive(seq1, seq2, 0, 0);
+            end = clock();
+            cout << "Naive solution: " << solution << endl
+                 << "Running time: " << (end - start) << endl;
         }
-        end = clock();
-        cout << "DP solution: " << solution << endl
-             << "Running time: " << (end - start) << endl;
+
+        // Run memoization solution.
+        if (use_memo) {
+            start = clock();
+            solution = lcs_length_memo(seq1, seq2, 0, 0);
+            end = clock();
+            cout << "Memoization solution: " << solution << endl
+                 << "Running time: " << (end - start) << endl;
+        }
+
+        // Run dynamic programming solution.
+        if (use_dp) {
+            start = clock();
+            solution = lcs_length_dp(seq1, seq2);
+            end = clock();
+            cout << "DP solution: " << solution << endl
+                 << "Running time: " << (end - start) << endl;
+        }
+
+        // Run Hirschberg algorithm
+        if (use_hirschberg) {
+            start = clock();
+            string sol = hirschberg(seq1, seq2);
+            end = clock();
+            cout << "Hirschberg algorithm solution: " << sol.length() << endl
+                 << "Running time: " << (end - start) << endl;
+            cout << "LCS: " << sol << endl;
+        }
     }
 
     return 0;
