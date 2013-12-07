@@ -25,7 +25,7 @@ using std::max;
 using std::string;
 
 const char* kDP = "-dp";
-const char* kHirsch = "-hirschberg";
+const char* kHirsch = "-hirsch";
 const char* kNaive = "-naive";
 const char* kMemo = "-memo";
 const char* kUsage =
@@ -44,7 +44,7 @@ string reverse(const string& s) {
     return reversed;
 }
 
-int* alg_b(int m, int n, const string& seq1, const string& seq2) {
+int* alg_b(int m, int n, const string& seq1, const string& seq2, int** k) {
     int* k[2];
     k[0] = new int[n + 1];
     k[1] = new int[n + 1];
@@ -149,12 +149,15 @@ string lcs_dp(const string& seq1, const string& seq2) {
         }
     }
 
+
+    string lcs = build_lcs(seq1, b, seq1.length(), seq2.length());
+    
     for (int i = 0; i < m + 1; ++i) {
-        delete[] b[i];
-        delete[] c[i];
+        delete b[i];
+        delete c[i];
     }
 
-    return build_lcs(seq1, b, seq1.length(), seq2.length());
+    return lcs;
 }
 
 string build_lcs(const string& seq1, int** b, int i, int j) {

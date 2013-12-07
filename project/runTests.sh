@@ -2,8 +2,6 @@
 # Author: Liam Morris
 # Description: Runs LCS tests for lcs.cpp implementation.
 
-MAXMEM_MB=2048
-ulimit -v $(($MAXMEM_MB * 1024))
 n=1
 while [ -f args/args.$n ]; do
         cur=1

@@ -14,6 +14,34 @@
 
 #include <string>
 
+// Returns the reverse of a given string.
+// 's' is the string to be reversed.
+// Returns the reverse of 's'.
+std::string reverse(const std::string& s);
+
+// Computes one row of the LCS matrix for the Hirschberg algorithm.
+// 'm' is the length of seq1
+// 'n' is the length of seq2
+// 'seq1' is the first string for which LCS is being found
+// 'seq2' is the second string for which LCS is being found
+// Returns the row of the LCS matrix that was computed.
+int* alg_b(int m, int n, const std::string& seq1, const std::string& seq2);
+
+// Finds the LCS string of two given strings.
+// 'm' is the length of seq1
+// 'n' is the length of seq2
+// 'seq1' is the first string for which LCS is being found
+// 'seq2' is the second string for which LCS is being found
+// Returns the LCS between 'seq1' and 'seq2'.
+std::string alg_c(
+        int m, int n, const std::string& seq1, const std::string& seq2);
+
+// Finds the LCS of two given strings using the Hirschberg algorithm.
+// 'seq1' is the first string for which LCS is being found
+// 'seq2' is the second string for which LCS is being found
+// Returns the LCS between 'seq1' and 'seq2'
+std::string hirschberg(const std::string& seq1, const std::string& seq2);
+
 // Finds the length of the longest common sequence of two strings by dynamic
 // programming method.
 // 'seq1' is the first string for which LCS is being found
