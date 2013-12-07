@@ -44,7 +44,7 @@ string reverse(const string& s) {
     return reversed;
 }
 
-int* alg_b(int m, int n, const string& seq1, const string& seq2, int** k) {
+int* alg_b(int m, int n, const string& seq1, const string& seq2) {
     int* k[2];
     k[0] = new int[n + 1];
     k[1] = new int[n + 1];
